@@ -1,0 +1,27 @@
+---
+- name: Smoke test the environment.
+  fail:
+    msg: "Could not find mysql_backup, or missing required parameters"
+  when:
+    - mysql_backup | default({}) | length < 1
+    - mysql_backup.sources | default([]) | length < 1
+    - mysql_backup.destinations | default([]) | length < 1
+    - mysql_backup.backups | default([]) | length < 1
+- name: Create a temp directory to hold the backup
+  tempfile:
+    state: directory
+    prefix: "mysql_backup"
+  register: _run_temp_dir
+  notify:
+    - delete temp items
+- name: Do backups
+  include_tasks: "backup.yml"
+  loop: "{{ mysql_backup.backups }}"
+  loop_control:
+    extended: yes
+    label: "{{ _backup.name | default(ansible_loop.index0) }}"
+    loop_var: _backup
+  when:
+    - _backup.disabled | default(false) != true
+  ignore_errors: "{{ mysql_backup.stopOnFailure | default(false) | bool }}"
+
