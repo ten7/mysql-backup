@@ -90,7 +90,6 @@ In this role "remotes" are upload destinations for backups. This role supports S
               hostBucket: "my-example-bucket.s3.example.com"
               s3Url: "https://my-example-bucket.s3.example.com"
               region: "us-east-1"
-              acl: "private"
             sftp.example.com:
               type: "sftp"
               host: "sftp.example.com"
@@ -108,7 +107,6 @@ For `s3` type remotes:
 * `secretKey` is the value of the access key necessary to secret the bucket. Ignored if `secretKeyFile` is specified.
 * `region` is the AWS region in which the bucket resides. Required if using AWS S3, may be optional for other providers.
 * `endpoint` is the S3 endpoint to use. Optional if using AWS, required for other providers.
-* `acl` is the ACL with which to upload the files. [See the rclone's S3 documentation on `--s3-acl`](https://rclone.org/s3/#s3-acl) for possible values. Optional, defaults to `private`.
 
 For `sftp` type remotes:
 * `host` is the hostname of the SFTP server. Required.
@@ -195,7 +193,7 @@ Where:
 Backups are uploaded to the remote with the `&lt;database_name&gt;.&lt;host&gt;.&lt;port&gt;-0.sql.gz`. Often, you'll want to retain previous backups in the case an older backup can aid in research or recovery. This role supports retaining and rotating multiple backups using the `retainCount` key.
 
 ```yaml
-pantheon_backup:
+mysql_backup:
   backups:
     - name: "example.com database"
       source: "example.com"
@@ -221,6 +219,32 @@ During a backup, if `retainCount` is set:
 3. The new backup is uploaded with a `0` index as `&lt;database_name&gt;.&lt;host&gt;.&lt;port&gt;-0.sql.gz`.
 
 This feature works both in S3 and SFTP.
+
+### Upload retries
+
+Sometimes an upload will fail due to transient network issues. You can specify how to control the backup using the `retries` and `retryDelay` keys on each target:
+
+```yaml
+mysql_backup:
+  backups:
+    - name: "example.com database"
+      source: "example.com"
+      database: "my-site-live"
+      element: "database"
+      targets:
+        - remote: "example-s3-bucket"
+          path: "example.com/database"
+          retries: 3
+          retryDelay: 30
+        - remote: "sftp.example.com"
+          path: "backups/example.com/database"
+          retries: 3
+          retryDelay: 30
+```
+
+Where:
+* `retries` is the total number of retries to perform if the upload should fail. Defaults to no retries.
+* `retryDelay` the number of seconds to wait between retries. Defaults to no delay.
 
 ## Example Playbook
 
@@ -248,7 +272,6 @@ This feature works both in S3 and SFTP.
               hostBucket: "my-example-bucket.s3.example.com"
               s3Url: "https://my-example-bucket.s3.example.com"
               region: "us-east-1"
-              acl: "private"
             sftp.example.com:
               type: "sftp"
               host: "sftp.example.com"
