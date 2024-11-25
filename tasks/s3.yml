@@ -7,11 +7,11 @@
 - name: Rotate files on S3 if a retainCount is set.
   shell: >
     {{ mysql_backup.s3cmd | default('s3cmd') }} mv
-    {% if _backup.endpoint is defined %}
-    --host={{ _backup.endpoint }}
+    {% if _remote.endpoint is defined %}
+    --host={{ _remote.endpoint }}
     {% endif %}
-    {% if _backup.endpoint is defined %}
-    --host-bucket={{ _backup.hostBucket }}
+    {% if _remote.endpoint is defined %}
+    --host-bucket={{ _remote.hostBucket }}
     {% endif %}
     --access_key={{ _access_key }}
     --secret_key={{ _secret_key }}
@@ -54,14 +54,10 @@
     object: "{{ _target.path | default('') }}/{{ _backup_file_prefix }}-0.{{ _backup_file_suffix }}"
     src: "{{ _backup_file_path }}"
     mode: put
-    s3_url: "{{ _backup.s3Url | default(omit) }}"
+    s3_url: "{{ _remote.s3Url | default(omit) }}"
     region: "{{ _remote.region | default(omit) }}"
     encrypt: no
     permission: private
-    retry: "{{ _backup.retries | default(omit) }}"
-    delay: "{{ _backup.retryDelay | default(omit) }}"
-    register: _result
-    until: _result.rc == 0
     aws_access_key: "\
       {% if _remote.accessKeyFile is defined %}\
       {{ lookup('file', _remote.accessKeyFile) }}\
